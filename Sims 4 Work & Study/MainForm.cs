@@ -34,7 +34,7 @@ namespace Sims_4_Work___Study
             this.ShowInTaskbar = false;
 
 
-            _audioManager.LoadRandomMusicFolder("musics");
+            _audioManager.LoadRandomMusicFolder("songs");
             _audioManager.InitializePlayback();
             _windowFocusMonitor.StartMonitoring();
 
