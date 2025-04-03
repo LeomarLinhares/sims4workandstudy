@@ -17,7 +17,12 @@ public class CSAudioManager
     private SimpleMixer mixer;
     private Random random = new Random();
 
+    private List<string> allFolders;
+    private List<string> unplayedFolders;
+
+
     private List<VolumeSource> tracks = new List<VolumeSource>();
+    public event EventHandler PlaybackFinished;
 
     private int currentHighlightIndex = -1;
 
@@ -31,6 +36,8 @@ public class CSAudioManager
     private VolumeSource fadingOutTrack;
     private VolumeSource fadingInTrack;
 
+    private List<IWaveSource> readers = new List<IWaveSource>();
+
     public CSAudioManager()
     {
         mixer = new SimpleMixer(2, 44100)
@@ -39,18 +46,26 @@ public class CSAudioManager
             DivideResult = false
         };
 
+        mixer.PlaybackFinished += (s, e) =>
+        {
+            PlaybackFinished?.Invoke(this, EventArgs.Empty);
+        };
+
         outputDevice = new WasapiOut();
+
     }
 
-    public void LoadRandomMusicFolder(string assetsPath)
+    public void LoadRandomMusicFolder()
     {
-        var musicFolders = Directory.GetDirectories(assetsPath);
-        if (musicFolders.Length == 0)
+        if (unplayedFolders.Count == 0)
         {
-            throw new DirectoryNotFoundException("Nenhuma subpasta encontrada em: " + assetsPath);
+            ResetUnplayedFolders();
         }
 
-        string selectedFolder = musicFolders[random.Next(musicFolders.Length)];
+        string selectedFolder = unplayedFolders[0];
+        unplayedFolders.RemoveAt(0);
+
+        Console.WriteLine("Carregando pasta: " + selectedFolder);
 
         var flacFiles = Directory.GetFiles(selectedFolder, "*.flac");
         if (flacFiles.Length < 8)
@@ -72,6 +87,22 @@ public class CSAudioManager
 
     public void InitializePlayback()
     {
+        if (mixer == null)
+        {
+            mixer = new SimpleMixer(2, 44100)
+            {
+                FillWithZeros = true,
+                DivideResult = false
+            };
+            mixer.PlaybackFinished += (s, e) =>
+            {
+                PlaybackFinished?.Invoke(this, EventArgs.Empty);
+            };
+        }
+
+        if (outputDevice == null)
+            outputDevice = new WasapiOut();
+
         outputDevice.Initialize(mixer.ToWaveSource(32));
         outputDevice.Play();
     }
@@ -81,7 +112,10 @@ public class CSAudioManager
     /// </summary>
     private void AddTrack(string filePath)
     {
-        var source = CodecFactory.Instance.GetCodec(filePath)
+        IWaveSource reader = CodecFactory.Instance.GetCodec(filePath);
+        readers.Add(reader);
+
+        var source = reader
             .ToSampleSource()
             .ToStereo();
 
@@ -93,6 +127,71 @@ public class CSAudioManager
         tracks.Add(volumeSource);
 
         mixer.AddSource(volumeSource);
+    }
+
+    public void CreateMixerIfNeeded()
+    {
+        if (mixer == null)
+        {
+            mixer = new SimpleMixer(2, 44100)
+            {
+                FillWithZeros = true,
+                DivideResult = false
+            };
+            mixer.PlaybackFinished += (s, e) =>
+            {
+                PlaybackFinished?.Invoke(this, EventArgs.Empty);
+            };
+        }
+    }
+
+    public void StartPlayback()
+    {
+        if (outputDevice == null)
+            outputDevice = new WasapiOut();
+
+        if (mixer == null)
+            CreateMixerIfNeeded();
+
+        outputDevice.Initialize(mixer.ToWaveSource(32));
+        outputDevice.Play();
+    }
+
+    public void ClearAll()
+    {
+        if (outputDevice != null)
+        {
+            outputDevice.Stop();
+            outputDevice.Dispose();
+            outputDevice = null;
+        }
+        if (mixer != null)
+        {
+            mixer.Dispose();
+            mixer = null;
+        }
+        tracks.Clear();
+        readers.Clear();
+    }
+
+    public void SetBasePath(string assetsPath)
+    {
+        allFolders = Directory.GetDirectories(assetsPath).ToList();
+        ResetUnplayedFolders();
+    }
+
+    private void ResetUnplayedFolders()
+    {
+        unplayedFolders = new List<string>(allFolders);
+        Shuffle(unplayedFolders);
+    }
+    private void Shuffle(List<string> list)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = random.Next(i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
+        }
     }
 
     /// <summary>
@@ -154,8 +253,25 @@ public class CSAudioManager
         if (outputDevice != null)
         {
             outputDevice.Stop();
-            outputDevice.Dispose();
-            outputDevice = null;
+        }
+    }
+
+    //-----------------------------------------------------------
+    // Métodos para DEBUG
+    //-----------------------------------------------------------
+
+    public void SkipToNearEnd(double secondsBeforeEnd = 5.0)
+    {
+        foreach (var reader in readers)
+        {
+            if (reader.CanSeek)
+            {
+                long bytesPerSecond = reader.WaveFormat.BytesPerSecond;
+                long newPos = reader.Length - (long)(secondsBeforeEnd * bytesPerSecond);
+                if (newPos < 0)
+                    newPos = 0;
+                reader.Position = newPos;
+            }
         }
     }
 }

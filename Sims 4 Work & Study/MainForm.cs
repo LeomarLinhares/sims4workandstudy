@@ -27,6 +27,7 @@ namespace Sims_4_Work___Study
             TrayIcon.ContextMenuStrip = ContextMenuStripFromTray;
             this.Load += MainFormLoad;
             this.FormClosing += MainForm_FormClosing;
+            _audioManager.PlaybackFinished += OnPlaybackFinished;
         }
 
         private void MainFormLoad(object sender, EventArgs e)
@@ -34,8 +35,8 @@ namespace Sims_4_Work___Study
             this.WindowState = FormWindowState.Minimized;
             this.ShowInTaskbar = false;
 
-
-            _audioManager.LoadRandomMusicFolder("songs");
+            _audioManager.SetBasePath("songs");
+            _audioManager.LoadRandomMusicFolder();
             _audioManager.InitializePlayback();
             _windowFocusMonitor.StartMonitoring();
 
@@ -44,6 +45,21 @@ namespace Sims_4_Work___Study
         public void OnForegroundWindowChanged()
         {
             _audioManager.OnWindowFocusChanged();
+        }
+
+        private void OnPlaybackFinished(object sender, EventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => OnPlaybackFinished(sender, e)));
+                return;
+            }
+
+            _audioManager.ClearAll();
+            _audioManager.CreateMixerIfNeeded();
+            _audioManager.LoadRandomMusicFolder();
+            _audioManager.InitializePlayback();
+
         }
 
         private void sairToolStripMenuItem_Click(object sender, EventArgs e)
@@ -72,6 +88,14 @@ namespace Sims_4_Work___Study
 
                 TrayIcon.Visible = true;
             }
+        }
+
+        // --------------------------------------------
+        // Métodos para DEBUG
+        // --------------------------------------------
+        private void btnSkip_Click(object sender, EventArgs e)
+        {
+            _audioManager.SkipToNearEnd(5.0);
         }
     }
 }

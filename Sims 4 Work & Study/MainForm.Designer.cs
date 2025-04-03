@@ -34,6 +34,7 @@
             ContextMenuStripFromTray = new ContextMenuStrip(components);
             ContextTraySair = new ToolStripMenuItem();
             ContextTrayAbrir = new ToolStripMenuItem();
+            button1 = new Button();
             ContextMenuStripFromTray.SuspendLayout();
             SuspendLayout();
             // 
@@ -53,21 +54,32 @@
             // ContextTraySair
             // 
             ContextTraySair.Name = "ContextTraySair";
-            ContextTraySair.Size = new Size(180, 22);
+            ContextTraySair.Size = new Size(96, 22);
             ContextTraySair.Text = "Sair";
             // 
             // ContextTrayAbrir
             // 
             ContextTrayAbrir.Name = "ContextTrayAbrir";
-            ContextTrayAbrir.Size = new Size(180, 22);
+            ContextTrayAbrir.Size = new Size(96, 22);
             ContextTrayAbrir.Text = "Abir";
             // 
-            // Form1
+            // button1
+            // 
+            button1.Location = new Point(75, 415);
+            button1.Name = "button1";
+            button1.Size = new Size(278, 23);
+            button1.TabIndex = 1;
+            button1.Text = "DEBUG Pular para os 5 últimos segundos";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += btnSkip_Click;
+            // 
+            // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(365, 450);
-            Name = "Form1";
+            Controls.Add(button1);
+            Name = "MainForm";
             Text = "Sims 4 Work & Study";
             ContextMenuStripFromTray.ResumeLayout(false);
             ResumeLayout(false);
@@ -79,5 +91,6 @@
         private ContextMenuStrip ContextMenuStripFromTray;
         private ToolStripMenuItem ContextTraySair;
         private ToolStripMenuItem ContextTrayAbrir;
+        private Button button1;
     }
 }

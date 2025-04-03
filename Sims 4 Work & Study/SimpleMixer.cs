@@ -16,6 +16,12 @@ namespace Sims_4_Work___Study
 
         public bool DivideResult { get; set; }
 
+        // Evento que será disparado quando todas as fontes terminarem
+        public event EventHandler PlaybackFinished;
+
+        // Flag para garantir que o evento seja disparado apenas uma vez
+        private bool playbackFinishedRaised = false;
+
         public SimpleMixer(int channelCount, int sampleRate)
         {
             if (channelCount < 1)
@@ -31,10 +37,6 @@ namespace Sims_4_Work___Study
         {
             if (source == null)
                 throw new ArgumentNullException("source");
-
-            Debug.WriteLine("Sample Rate: " + source.WaveFormat.SampleRate);
-            Debug.WriteLine("Channels: " + source.WaveFormat.Channels);
-            Debug.WriteLine("BitsPerSample: " + source.WaveFormat.BitsPerSample);
 
             if (source.WaveFormat.Channels != WaveFormat.Channels ||
                source.WaveFormat.SampleRate != WaveFormat.SampleRate)
@@ -95,6 +97,13 @@ namespace Sims_4_Work___Study
                             //raise event here
                             RemoveSource(sampleSource); //remove the input to make sure that the event gets only raised once.
                         }
+                    }
+
+                    if (_sampleSources.Count == 0 && !playbackFinishedRaised)
+                    {
+                        playbackFinishedRaised = true;
+                        // Você pode chamar o evento aqui dentro do lock ou fora dele, dependendo da sua necessidade.
+                        PlaybackFinished?.Invoke(this, EventArgs.Empty);
                     }
 
                     if (DivideResult)
