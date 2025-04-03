@@ -256,6 +256,25 @@ public class CSAudioManager
         }
     }
 
+    public void SetMainTrackVolume(float volume)
+    {
+        if (currentHighlightIndex >= 0 && currentHighlightIndex < tracks.Count)
+        {
+            tracks[currentHighlightIndex].Volume = volume;
+        }
+    }
+
+    public void PausePlayback()
+    {
+        outputDevice?.Pause();
+    }
+
+    public void ResumePlayback()
+    {
+        outputDevice?.Play();
+    }
+
+
     //-----------------------------------------------------------
     // Métodos para DEBUG
     //-----------------------------------------------------------
