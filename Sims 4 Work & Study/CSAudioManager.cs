@@ -3,39 +3,43 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Timers;
-using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
+using CSCore;
+using CSCore.Codecs;
+using CSCore.Codecs.FLAC;
+using CSCore.SoundOut;
+using CSCore.Streams;
+using Sims_4_Work___Study;
 
-public class AudioManager
+
+public class CSAudioManager
 {
-    private IWavePlayer outputDevice;
-    private MixingSampleProvider mixer;
+    private ISoundOut outputDevice;
+    private SimpleMixer mixer;
     private Random random = new Random();
 
-    // Lista de faixas (VolumeSampleProvider) para controlar o volume de cada uma
-    private List<VolumeSampleProvider> tracks = new List<VolumeSampleProvider>();
+    private List<VolumeSource> tracks = new List<VolumeSource>();
 
-    // Índice da faixa atualmente em destaque
     private int currentHighlightIndex = -1;
 
-    // Volumes pré-definidos
-    private float volumeAlto = 1.0f;
-    private float volumeMudo = 0.0f;
+    private const float volumeAlto = 1.0f;
+    private const float volumeMudo = 0.0f;
 
     private System.Timers.Timer fadeTimer;
     private const int fadeSteps = 20;
     private const int fadeIntervalMs = 50;
     private int currentStep;
-    private VolumeSampleProvider fadingOutTrack;
-    private VolumeSampleProvider fadingInTrack;
+    private VolumeSource fadingOutTrack;
+    private VolumeSource fadingInTrack;
 
-    public AudioManager()
+    public CSAudioManager()
     {
-        mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2))
+        mixer = new SimpleMixer(2, 44100)
         {
-            ReadFully = true
+            FillWithZeros = true,
+            DivideResult = false
         };
-        outputDevice = new WaveOutEvent();
+
+        outputDevice = new WasapiOut();
     }
 
     public void LoadRandomMusicFolder(string assetsPath)
@@ -48,20 +52,17 @@ public class AudioManager
 
         string selectedFolder = musicFolders[random.Next(musicFolders.Length)];
 
-        var mp3Files = Directory.GetFiles(selectedFolder, "*.mp3");
-        if (mp3Files.Length < 8)
+        var flacFiles = Directory.GetFiles(selectedFolder, "*.flac");
+        if (flacFiles.Length < 8)
         {
-            throw new FileNotFoundException($"Pasta {selectedFolder} não tem pelo menos 8 faixas MP3.");
+            throw new FileNotFoundException($"Pasta {selectedFolder} não tem pelo menos 8 faixas FLAC.");
         }
 
-        // 4. Carregar as 8 faixas
-        // (Se quiser garantir ordem, pode ordenar mp3Files; ou se quiser só as primeiras 8, etc.)
-        foreach (var filePath in mp3Files.Take(8))
+        foreach (var filePath in flacFiles.Take(8))
         {
             AddTrack(filePath);
         }
 
-        // 5. Selecionar uma faixa aleatória para ficar com volume alto
         if (tracks.Count == 8)
         {
             currentHighlightIndex = random.Next(8);
@@ -71,35 +72,36 @@ public class AudioManager
 
     public void InitializePlayback()
     {
-        outputDevice.Init(mixer);
+        outputDevice.Initialize(mixer.ToWaveSource(32));
         outputDevice.Play();
     }
 
     /// <summary>
-    /// Adiciona uma faixa MP3 ao mixer, com volume inicial mudo (0).
+    /// Adiciona uma faixa FLAC ao mixer, iniciando com volume mudo (0).
     /// </summary>
     private void AddTrack(string filePath)
     {
-        var reader = new Mp3FileReader(filePath);
-        var sampleProvider = reader.ToSampleProvider();
+        var source = CodecFactory.Instance.GetCodec(filePath)
+            .ToSampleSource()
+            .ToStereo();
 
-        var volumeProvider = new VolumeSampleProvider(sampleProvider)
+        var volumeSource = new VolumeSource(source)
         {
-            Volume = volumeMudo  // começa mudo
+            Volume = volumeMudo
         };
 
-        tracks.Add(volumeProvider);
-        mixer.AddMixerInput(volumeProvider);
+        tracks.Add(volumeSource);
+
+        mixer.AddSource(volumeSource);
     }
 
     /// <summary>
-    /// Quando detecta mudança de janela, faz o fade entre a faixa atual e outra aleatória.
+    /// Quando ocorre mudança de foco na janela, faz o fade entre a faixa atual e outra aleatória.
     /// </summary>
     public void OnWindowFocusChanged()
     {
         if (tracks.Count < 8) return;
 
-        // Escolher uma faixa diferente da atual
         int newIndex;
         do
         {
@@ -108,10 +110,8 @@ public class AudioManager
 
         fadingOutTrack = tracks[currentHighlightIndex];
         fadingInTrack = tracks[newIndex];
-
         currentHighlightIndex = newIndex;
 
-        // Iniciar o fade (1 seg)
         currentStep = 0;
         if (fadeTimer == null)
         {
@@ -125,30 +125,27 @@ public class AudioManager
     {
         currentStep++;
 
-        // Quanto mudar por passo
         float delta = (volumeAlto - volumeMudo) / fadeSteps;
 
-        // Diminuir a faixa que estava em destaque
         if (fadingOutTrack != null)
         {
             float newVolume = fadingOutTrack.Volume - delta;
             fadingOutTrack.Volume = Math.Max(volumeMudo, newVolume);
         }
 
-        // Aumentar a faixa que vai entrar
         if (fadingInTrack != null)
         {
             float newVolume = fadingInTrack.Volume + delta;
             fadingInTrack.Volume = Math.Min(volumeAlto, newVolume);
         }
 
-        // Se já concluímos todos os passos, paramos o timer
         if (currentStep >= fadeSteps)
         {
             fadeTimer.Stop();
-            // Garante volumes finais
-            if (fadingOutTrack != null) fadingOutTrack.Volume = volumeMudo;
-            if (fadingInTrack != null) fadingInTrack.Volume = volumeAlto;
+            if (fadingOutTrack != null)
+                fadingOutTrack.Volume = volumeMudo;
+            if (fadingInTrack != null)
+                fadingInTrack.Volume = volumeAlto;
         }
     }
 

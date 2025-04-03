@@ -6,13 +6,14 @@ namespace Sims_4_Work___Study
     public partial class MainForm : Form
     {
         private WindowFocusMonitor _windowFocusMonitor;
-        private AudioManager _audioManager;
+        private CSAudioManager _audioManager;
+
 
         public MainForm()
         {
             InitializeComponent();
             _windowFocusMonitor = new WindowFocusMonitor();
-            _audioManager = new AudioManager();
+            _audioManager = new CSAudioManager();
 
 
             _windowFocusMonitor.OnFocusChanged = () =>
