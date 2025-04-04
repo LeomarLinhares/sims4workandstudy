@@ -14,7 +14,7 @@ As músicas utilizadas neste projeto são trilhas do jogo **The Sims 4**, nos mo
 **Músico:** Ilan Eshkeri  
 **Publicado por:** Electronic Arts
 
-> Este projeto é de uso pessoal e educacional, sem fins lucrativos ou redistribuição.
+> Este projeto é de uso pessoal e educacional, sem fins lucrativos.
 
 ## 🧠 Inspiração
 
