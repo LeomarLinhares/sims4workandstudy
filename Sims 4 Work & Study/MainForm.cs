@@ -14,19 +14,25 @@ namespace Sims_4_Work___Study
             InitializeComponent();
             _windowFocusMonitor = new WindowFocusMonitor();
             _audioManager = new CSAudioManager();
-
+            
+            TrayIcon.Visible = true;
+            TrayIcon.DoubleClick += TrayIcon_DoubleClick;
+            TrayIcon.Click += TrayIcon_DoubleClick;
+            TrayIcon.ContextMenuStrip = ContextMenuStripFromTray;
+            TrayIcon.BalloonTipTitle = "The Sims 4 Work & Study";
+            TrayIcon.BalloonTipText = "O programa está rodando em segundo plano.";
+            TrayIcon.BalloonTipIcon = ToolTipIcon.Info;
+            TrayIcon.ShowBalloonTip(3000);
+            ContextTrayAbrir.Click += TrayIcon_DoubleClick;
+            ContextTraySair.Click += sairToolStripMenuItem_Click;
 
             _windowFocusMonitor.OnFocusChanged = () =>
             {
                 _audioManager.OnWindowFocusChanged();
             };
 
-            TrayIcon.DoubleClick += TrayIcon_DoubleClick;
-            ContextTrayAbrir.Click += TrayIcon_DoubleClick;
-            ContextTraySair.Click += sairToolStripMenuItem_Click;
             playPauseButton.Click += btnPauseResume_Click;
             trackBarMainVolume.ValueChanged += trackBarMainVolume_ValueChanged;
-            TrayIcon.ContextMenuStrip = ContextMenuStripFromTray;
             this.Load += MainFormLoad;
             this.FormClosing += MainForm_FormClosing;
             _audioManager.PlaybackFinished += OnPlaybackFinished;

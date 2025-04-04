@@ -34,7 +34,7 @@
             ContextMenuStripFromTray = new ContextMenuStrip(components);
             ContextTraySair = new ToolStripMenuItem();
             ContextTrayAbrir = new ToolStripMenuItem();
-            button1 = new Button();
+            debugJumpTo5LastSeconds = new Button();
             trackBarMainVolume = new TrackBar();
             label1 = new Label();
             playPauseButton = new Button();
@@ -67,15 +67,15 @@
             ContextTrayAbrir.Size = new Size(96, 22);
             ContextTrayAbrir.Text = "Abir";
             // 
-            // button1
+            // debugJumpTo5LastSeconds
             // 
-            button1.Location = new Point(12, 179);
-            button1.Name = "button1";
-            button1.Size = new Size(341, 23);
-            button1.TabIndex = 1;
-            button1.Text = "DEBUG Pular para os 5 últimos segundos";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += btnSkip_Click;
+            debugJumpTo5LastSeconds.Location = new Point(12, 179);
+            debugJumpTo5LastSeconds.Name = "debugJumpTo5LastSeconds";
+            debugJumpTo5LastSeconds.Size = new Size(341, 23);
+            debugJumpTo5LastSeconds.TabIndex = 1;
+            debugJumpTo5LastSeconds.Text = "DEBUG Pular para os 5 últimos segundos";
+            debugJumpTo5LastSeconds.UseVisualStyleBackColor = true;
+            debugJumpTo5LastSeconds.Click += btnSkip_Click;
             // 
             // trackBarMainVolume
             // 
@@ -112,7 +112,7 @@
             Controls.Add(playPauseButton);
             Controls.Add(label1);
             Controls.Add(trackBarMainVolume);
-            Controls.Add(button1);
+            Controls.Add(debugJumpTo5LastSeconds);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "MainForm";
             Text = "Sims 4 Work & Study";
@@ -120,6 +120,14 @@
             ((System.ComponentModel.ISupportInitialize)trackBarMainVolume).EndInit();
             ResumeLayout(false);
             PerformLayout();
+            //
+            // Debug config
+            //
+#if DEBUG
+            this.debugJumpTo5LastSeconds.Visible = true;
+#else
+            this.debugJumpTo5LastSeconds.Visible = false;
+#endif
         }
 
         #endregion
@@ -128,7 +136,7 @@
         private ContextMenuStrip ContextMenuStripFromTray;
         private ToolStripMenuItem ContextTraySair;
         private ToolStripMenuItem ContextTrayAbrir;
-        private Button button1;
+        private Button debugJumpTo5LastSeconds;
         private TrackBar trackBarMainVolume;
         private Label label1;
         private Button playPauseButton;
