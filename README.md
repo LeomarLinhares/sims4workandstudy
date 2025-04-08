@@ -4,6 +4,8 @@ Este é um aplicativo Windows minimalista que roda em segundo plano (na bandeja 
 
 O diferencial está na dinâmica sonora: todas as faixas de uma música tocam simultaneamente, mas apenas uma é destacada com volume mais alto. A cada troca de janela no sistema, o aplicativo realiza uma transição suave (fade) entre as faixas, mudando aleatoriamente qual está em destaque.
 
+[Baixar Instalador](https://drive.google.com/file/d/1J5kAGRrvPph2LWHu_LI4qCfzven-XH5D/view?usp=sharing)
+
 ## 🎵 Créditos e Direitos Autorais
 
 As músicas utilizadas neste projeto são trilhas do jogo **The Sims 4**, nos modos de **compra** e **construção**.
@@ -12,7 +14,7 @@ As músicas utilizadas neste projeto são trilhas do jogo **The Sims 4**, nos mo
 **Músico:** Ilan Eshkeri  
 **Publicado por:** Electronic Arts
 
-> Este projeto é de uso pessoal e educacional, sem fins lucrativos ou redistribuição.
+> Este projeto é de uso pessoal e educacional, sem fins lucrativos.
 
 ## 🧠 Inspiração
 
