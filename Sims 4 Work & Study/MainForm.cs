@@ -20,7 +20,7 @@ namespace Sims_4_Work___Study
             TrayIcon.Click += TrayIcon_DoubleClick;
             TrayIcon.ContextMenuStrip = ContextMenuStripFromTray;
             TrayIcon.BalloonTipTitle = "The Sims 4 Work & Study";
-            TrayIcon.BalloonTipText = "O programa est· rodando em segundo plano.";
+            TrayIcon.BalloonTipText = "O programa est√° rodando em segundo plano.";
             TrayIcon.BalloonTipIcon = ToolTipIcon.Info;
             TrayIcon.ShowBalloonTip(3000);
             ContextTrayAbrir.Click += TrayIcon_DoubleClick;
@@ -89,12 +89,24 @@ namespace Sims_4_Work___Study
         {
             if (e.CloseReason == CloseReason.UserClosing)
             {
-                e.Cancel = true;
+                DialogResult result = MessageBox.Show(
+                    "Deseja encerrar o aplicativo?\nSim: sair\nN√£o: minimizar para a bandeja.",
+                    "Sair ou Minimizar",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
 
-                this.WindowState = FormWindowState.Minimized;
-                this.ShowInTaskbar = false;
-
-                TrayIcon.Visible = true;
+                if (result == DialogResult.Yes)
+                {
+                    _audioManager.StopAll();
+                    _windowFocusMonitor.StopMonitoring();
+                }
+                else
+                {
+                    e.Cancel = true;
+                    this.WindowState = FormWindowState.Minimized;
+                    this.ShowInTaskbar = false;
+                    TrayIcon.Visible = true;
+                }
             }
         }
 
@@ -122,7 +134,7 @@ namespace Sims_4_Work___Study
         }
 
         // --------------------------------------------
-        // MÈtodos para DEBUG
+        // M√©todos para DEBUG
         // --------------------------------------------
         private void btnSkip_Click(object sender, EventArgs e)
         {
