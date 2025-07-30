@@ -67,7 +67,7 @@ public class CSAudioManager
 
         Console.WriteLine("Carregando pasta: " + selectedFolder);
 
-        var flacFiles = Directory.GetFiles(selectedFolder, "*.flac");
+        var flacFiles = Directory.GetFiles(selectedFolder, "*.mp3");
         if (flacFiles.Length < 8)
         {
             throw new FileNotFoundException($"Pasta {selectedFolder} não tem pelo menos 8 faixas FLAC.");
