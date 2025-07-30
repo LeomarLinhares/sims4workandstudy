@@ -19,7 +19,7 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 
-		<Content Include="songs\**\*.flac">
+		<Content Include="songs\**\*.mp3">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
