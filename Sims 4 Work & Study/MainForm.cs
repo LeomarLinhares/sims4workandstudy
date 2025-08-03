@@ -150,5 +150,15 @@ namespace Sims_4_Work___Study
         {
 
         }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            _audioManager.PreviousSong();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            _audioManager.NextSong();
+        }
     }
 }

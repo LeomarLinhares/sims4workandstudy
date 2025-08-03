@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Timers;
@@ -19,6 +20,8 @@ public class CSAudioManager
 
     private List<string> allFolders;
     private List<string> unplayedFolders;
+    private List<string> playedFolders;
+    private string playingFolder;
 
 
     private List<VolumeSource> tracks = new List<VolumeSource>();
@@ -64,9 +67,15 @@ public class CSAudioManager
         }
 
         string selectedFolder = unplayedFolders[0];
+
+        if (playingFolder == null)
+        {
+            playingFolder = selectedFolder;
+        }
+
         unplayedFolders.RemoveAt(0);
 
-        Console.WriteLine("Carregando pasta: " + selectedFolder);
+        Debug.WriteLine("Carregando pasta: " + selectedFolder);
 
         var flacFiles = Directory.GetFiles(selectedFolder, "*.mp3");
         if (flacFiles.Length < 8)
@@ -126,7 +135,6 @@ public class CSAudioManager
         };
 
         tracks.Add(volumeSource);
-
         mixer.AddSource(volumeSource);
     }
 
@@ -158,6 +166,15 @@ public class CSAudioManager
         outputDevice.Play();
     }
 
+    public void ClearMixer()
+    {
+        if (mixer != null)
+        {
+            mixer.Dispose();
+            mixer = null;
+        }
+    }
+
     public void ClearAll()
     {
         if (outputDevice != null)
@@ -166,11 +183,7 @@ public class CSAudioManager
             outputDevice.Dispose();
             outputDevice = null;
         }
-        if (mixer != null)
-        {
-            mixer.Dispose();
-            mixer = null;
-        }
+        ClearMixer();
         tracks.Clear();
         readers.Clear();
     }
@@ -183,8 +196,10 @@ public class CSAudioManager
 
     private void ResetUnplayedFolders()
     {
+        allFolders = new List<string>(allFolders);
+        Shuffle(allFolders);
         unplayedFolders = new List<string>(allFolders);
-        Shuffle(unplayedFolders);
+        playedFolders = new List<string>();
     }
     private void Shuffle(List<string> list)
     {
@@ -278,6 +293,70 @@ public class CSAudioManager
         outputDevice?.Play();
     }
 
+    public void PreviousSong()
+    {
+        if (playedFolders.Count == 0)
+        {
+            Debug.WriteLine("Nenhuma música anterior para reproduzir.");
+            return;
+        }
+        unplayedFolders.Insert(0, playingFolder);
+        playingFolder = playedFolders.Last();
+        playedFolders.RemoveAt(playedFolders.Count - 1);
+        Debug.WriteLine("Reproduzindo pasta anterior: " + playingFolder);
+        ClearMixer();
+        CreateMixerIfNeeded();
+        tracks.Clear();
+        var flacFiles = Directory.GetFiles(playingFolder, "*.mp3");
+        if (flacFiles.Length < 8)
+        {
+            throw new FileNotFoundException($"Pasta {playingFolder} não tem pelo menos 8 faixas FLAC.");
+        }
+        foreach (var filePath in flacFiles.Take(8))
+        {
+            AddTrack(filePath);
+        }
+        if (tracks.Count == 8)
+        {
+            currentHighlightIndex = random.Next(8);
+            tracks[currentHighlightIndex].Volume = volumeAlto;
+            StopAll();
+            InitializePlayback();
+        }
+    }
+
+    public void NextSong()
+    {
+        if (unplayedFolders.Count == 0)
+        {
+            ResetUnplayedFolders();
+        }
+        playedFolders.Add(playingFolder);
+        string selectedFolder = unplayedFolders[0];
+        unplayedFolders.RemoveAt(0);
+        playingFolder = selectedFolder;
+        Debug.WriteLine("Carregando pasta: " + selectedFolder);
+        ClearMixer();
+        CreateMixerIfNeeded();
+        tracks.Clear();
+
+        var flacFiles = Directory.GetFiles(selectedFolder, "*.mp3");
+        if (flacFiles.Length < 8)
+        {
+            throw new FileNotFoundException($"Pasta {selectedFolder} não tem pelo menos 8 faixas FLAC.");
+        }
+        foreach (var filePath in flacFiles.Take(8))
+        {
+            AddTrack(filePath);
+        }
+        if (tracks.Count == 8)
+        {
+            currentHighlightIndex = random.Next(8);
+            tracks[currentHighlightIndex].Volume = volumeAlto;
+            StopAll();
+            InitializePlayback();
+        }
+    }
 
     //-----------------------------------------------------------
     // Métodos para DEBUG

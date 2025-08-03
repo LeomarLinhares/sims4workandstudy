@@ -40,6 +40,8 @@
             playPauseButton = new Button();
             numericUpDown_ChangeChannelChance = new NumericUpDown();
             label2 = new Label();
+            button1 = new Button();
+            button2 = new Button();
             ContextMenuStripFromTray.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)trackBarMainVolume).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericUpDown_ChangeChannelChance).BeginInit();
@@ -72,9 +74,9 @@
             // 
             // debugJumpTo5LastSeconds
             // 
-            debugJumpTo5LastSeconds.Location = new Point(12, 360);
+            debugJumpTo5LastSeconds.Location = new Point(12, 227);
             debugJumpTo5LastSeconds.Name = "debugJumpTo5LastSeconds";
-            debugJumpTo5LastSeconds.Size = new Size(341, 23);
+            debugJumpTo5LastSeconds.Size = new Size(341, 24);
             debugJumpTo5LastSeconds.TabIndex = 1;
             debugJumpTo5LastSeconds.Text = "DEBUG Pular para os 5 últimos segundos";
             debugJumpTo5LastSeconds.UseVisualStyleBackColor = true;
@@ -100,17 +102,17 @@
             // 
             // playPauseButton
             // 
-            playPauseButton.Location = new Point(12, 12);
+            playPauseButton.Location = new Point(93, 12);
             playPauseButton.Name = "playPauseButton";
-            playPauseButton.Size = new Size(341, 67);
+            playPauseButton.Size = new Size(179, 73);
             playPauseButton.TabIndex = 4;
             playPauseButton.Text = "Pausar";
             playPauseButton.UseVisualStyleBackColor = true;
             // 
-            // numericUpDown1
+            // numericUpDown_ChangeChannelChance
             // 
             numericUpDown_ChangeChannelChance.Location = new Point(267, 198);
-            numericUpDown_ChangeChannelChance.Name = "numericUpDown1";
+            numericUpDown_ChangeChannelChance.Name = "numericUpDown_ChangeChannelChance";
             numericUpDown_ChangeChannelChance.Size = new Size(86, 23);
             numericUpDown_ChangeChannelChance.TabIndex = 5;
             numericUpDown_ChangeChannelChance.ValueChanged += numericUpDown_ChangeChannelChance_ValueChanged;
@@ -123,13 +125,34 @@
             label2.Size = new Size(130, 15);
             label2.TabIndex = 6;
             label2.Text = "Chance de alterar canal";
-
+            // 
+            // button1
+            // 
+            button1.Location = new Point(278, 12);
+            button1.Name = "button1";
+            button1.Size = new Size(75, 73);
+            button1.TabIndex = 7;
+            button1.Text = "Next";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
+            // 
+            // button2
+            // 
+            button2.Location = new Point(12, 12);
+            button2.Name = "button2";
+            button2.Size = new Size(75, 73);
+            button2.TabIndex = 8;
+            button2.Text = "Previous";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(365, 395);
+            ClientSize = new Size(365, 253);
+            Controls.Add(button2);
+            Controls.Add(button1);
             Controls.Add(label2);
             Controls.Add(numericUpDown_ChangeChannelChance);
             Controls.Add(playPauseButton);
@@ -159,5 +182,7 @@
         private Button playPauseButton;
         private NumericUpDown numericUpDown_ChangeChannelChance;
         private Label label2;
+        private Button button1;
+        private Button button2;
     }
 }
