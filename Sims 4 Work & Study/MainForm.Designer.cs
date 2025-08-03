@@ -38,8 +38,11 @@
             trackBarMainVolume = new TrackBar();
             label1 = new Label();
             playPauseButton = new Button();
+            numericUpDown_ChangeChannelChance = new NumericUpDown();
+            label2 = new Label();
             ContextMenuStripFromTray.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)trackBarMainVolume).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown_ChangeChannelChance).BeginInit();
             SuspendLayout();
             // 
             // TrayIcon
@@ -69,7 +72,7 @@
             // 
             // debugJumpTo5LastSeconds
             // 
-            debugJumpTo5LastSeconds.Location = new Point(12, 179);
+            debugJumpTo5LastSeconds.Location = new Point(12, 360);
             debugJumpTo5LastSeconds.Name = "debugJumpTo5LastSeconds";
             debugJumpTo5LastSeconds.Size = new Size(341, 23);
             debugJumpTo5LastSeconds.TabIndex = 1;
@@ -104,11 +107,31 @@
             playPauseButton.Text = "Pausar";
             playPauseButton.UseVisualStyleBackColor = true;
             // 
+            // numericUpDown1
+            // 
+            numericUpDown_ChangeChannelChance.Location = new Point(267, 198);
+            numericUpDown_ChangeChannelChance.Name = "numericUpDown1";
+            numericUpDown_ChangeChannelChance.Size = new Size(86, 23);
+            numericUpDown_ChangeChannelChance.TabIndex = 5;
+            numericUpDown_ChangeChannelChance.ValueChanged += numericUpDown_ChangeChannelChance_ValueChanged;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(12, 206);
+            label2.Name = "label2";
+            label2.Size = new Size(130, 15);
+            label2.TabIndex = 6;
+            label2.Text = "Chance de alterar canal";
+
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(365, 221);
+            ClientSize = new Size(365, 395);
+            Controls.Add(label2);
+            Controls.Add(numericUpDown_ChangeChannelChance);
             Controls.Add(playPauseButton);
             Controls.Add(label1);
             Controls.Add(trackBarMainVolume);
@@ -116,18 +139,12 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "MainForm";
             Text = "Sims 4 Work & Study";
+            Load += MainForm_Load;
             ContextMenuStripFromTray.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)trackBarMainVolume).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericUpDown_ChangeChannelChance).EndInit();
             ResumeLayout(false);
             PerformLayout();
-            //
-            // Debug config
-            //
-#if DEBUG
-            this.debugJumpTo5LastSeconds.Visible = true;
-#else
-            this.debugJumpTo5LastSeconds.Visible = false;
-#endif
         }
 
         #endregion
@@ -140,5 +157,7 @@
         private TrackBar trackBarMainVolume;
         private Label label1;
         private Button playPauseButton;
+        private NumericUpDown numericUpDown_ChangeChannelChance;
+        private Label label2;
     }
 }

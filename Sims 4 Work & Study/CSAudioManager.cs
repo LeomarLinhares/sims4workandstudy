@@ -23,6 +23,7 @@ public class CSAudioManager
 
     private List<VolumeSource> tracks = new List<VolumeSource>();
     public event EventHandler PlaybackFinished;
+    public int chanceTarget;
 
     private int currentHighlightIndex = -1;
 
@@ -199,6 +200,9 @@ public class CSAudioManager
     /// </summary>
     public void OnWindowFocusChanged()
     {
+        int chanceResult = random.Next(100);
+        if (chanceResult >= chanceTarget) return;
+
         if (tracks.Count < 8) return;
 
         int newIndex;

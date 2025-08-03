@@ -14,7 +14,7 @@ namespace Sims_4_Work___Study
             InitializeComponent();
             _windowFocusMonitor = new WindowFocusMonitor();
             _audioManager = new CSAudioManager();
-            
+
             TrayIcon.Visible = true;
             TrayIcon.DoubleClick += TrayIcon_DoubleClick;
             TrayIcon.Click += TrayIcon_DoubleClick;
@@ -139,6 +139,16 @@ namespace Sims_4_Work___Study
         private void btnSkip_Click(object sender, EventArgs e)
         {
             _audioManager.SkipToNearEnd(5.0);
+        }
+
+        private void numericUpDown_ChangeChannelChance_ValueChanged(object sender, EventArgs e)
+        {
+            _audioManager.chanceTarget = (int)numericUpDown_ChangeChannelChance.Value;
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
