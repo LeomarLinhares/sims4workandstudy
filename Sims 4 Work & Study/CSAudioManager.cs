@@ -10,7 +10,7 @@ using CSCore.Codecs.FLAC;
 using CSCore.SoundOut;
 using CSCore.Streams;
 using Sims_4_Work___Study;
-
+using Sims_4_Work___Study.Properties;
 
 public class CSAudioManager
 {
@@ -26,7 +26,7 @@ public class CSAudioManager
 
     private List<VolumeSource> tracks = new List<VolumeSource>();
     public event EventHandler PlaybackFinished;
-    public int chanceTarget;
+    public int chanceTarget = Settings.Default.change_channel_chance;
 
     private int currentHighlightIndex = -1;
 

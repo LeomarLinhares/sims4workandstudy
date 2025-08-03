@@ -39,6 +39,7 @@
             label1 = new Label();
             playPauseButton = new Button();
             numericUpDown_ChangeChannelChance = new NumericUpDown();
+            numericUpDown_ChangeChannelChance.Value = Properties.Settings.Default.change_channel_chance;
             label2 = new Label();
             button1 = new Button();
             button2 = new Button();

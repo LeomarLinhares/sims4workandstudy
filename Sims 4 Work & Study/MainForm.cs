@@ -144,6 +144,8 @@ namespace Sims_4_Work___Study
         private void numericUpDown_ChangeChannelChance_ValueChanged(object sender, EventArgs e)
         {
             _audioManager.chanceTarget = (int)numericUpDown_ChangeChannelChance.Value;
+            Properties.Settings.Default.change_channel_chance = _audioManager.chanceTarget;
+            Properties.Settings.Default.Save();
         }
 
         private void MainForm_Load(object sender, EventArgs e)
