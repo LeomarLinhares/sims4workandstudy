@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 **/songs/
 **/songs/
+
+**/installer_output/

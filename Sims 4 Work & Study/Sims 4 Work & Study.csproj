@@ -25,4 +25,8 @@
 		</Content>
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Include="installer_output\**" />
+	</ItemGroup>
+
 </Project>

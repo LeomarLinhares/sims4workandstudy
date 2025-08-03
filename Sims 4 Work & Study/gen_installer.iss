@@ -3,7 +3,7 @@ AppName=Sims 4 Work & Study
 AppVersion=0.2
 DefaultDirName={pf}\Sims4WorkAndStudy
 DefaultGroupName=Sims4WorkAndStudy
-OutputDir=output
+OutputDir=installer_output
 OutputBaseFilename=Installer
 
 [Files]
