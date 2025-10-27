@@ -209,6 +209,7 @@ namespace Sims_4_Work___Study
                 // Carregar configurações salvas
                 volumeSlider.Value = Properties.Settings.Default.volume;
                 txtChangeChannelChance.Text = Properties.Settings.Default.change_channel_chance.ToString();
+                chkMinimizeToTray.IsChecked = Properties.Settings.Default.minimize_to_tray;
                 
                 // NÃO minimiza no início para debug
                 // WindowState = WindowState.Minimized;
@@ -435,6 +436,12 @@ namespace Sims_4_Work___Study
             }
         }
         
+        private void ChkMinimizeToTray_Changed(object sender, RoutedEventArgs e)
+        {
+            Properties.Settings.Default.minimize_to_tray = chkMinimizeToTray.IsChecked ?? false;
+            Properties.Settings.Default.Save();
+        }
+        
         // Handlers para os botões da taskbar (ThumbButtonInfo)
         private void TaskbarPrevious_Click(object sender, EventArgs e)
         {
@@ -453,7 +460,8 @@ namespace Sims_4_Work___Study
 
         private void Window_StateChanged(object sender, EventArgs e)
         {
-            if (WindowState == WindowState.Minimized)
+            // Só minimiza para a bandeja se a opção estiver ativada
+            if (WindowState == WindowState.Minimized && Properties.Settings.Default.minimize_to_tray)
             {
                 Hide();
                 _trayIcon?.ShowBalloonTip(2000,
@@ -465,14 +473,36 @@ namespace Sims_4_Work___Study
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            var result = System.Windows.MessageBox.Show(
-                "Deseja encerrar o aplicativo?\n\nSim: Encerrar completamente\nNão: Minimizar para a bandeja do sistema",
-                "The Sims 4 Work & Study",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            // Se a opção de minimizar para a bandeja estiver ativa, pergunta ao usuário
+            if (Properties.Settings.Default.minimize_to_tray)
             {
+                var result = System.Windows.MessageBox.Show(
+                    "Deseja encerrar o aplicativo?\n\nSim: Encerrar completamente\nNão: Minimizar para a bandeja do sistema",
+                    "The Sims 4 Work & Study",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    _updateTimer?.Stop();
+                    _audioManager?.StopAll();
+                    _windowFocusMonitor?.StopMonitoring();
+                    
+                    if (_trayIcon != null)
+                    {
+                        _trayIcon.Visible = false;
+                        _trayIcon.Dispose();
+                    }
+                }
+                else
+                {
+                    e.Cancel = true;
+                    WindowState = WindowState.Minimized;
+                }
+            }
+            else
+            {
+                // Se não estiver ativa, encerra diretamente
                 _updateTimer?.Stop();
                 _audioManager?.StopAll();
                 _windowFocusMonitor?.StopMonitoring();
@@ -482,11 +512,6 @@ namespace Sims_4_Work___Study
                     _trayIcon.Visible = false;
                     _trayIcon.Dispose();
                 }
-            }
-            else
-            {
-                e.Cancel = true;
-                WindowState = WindowState.Minimized;
             }
         }
     }

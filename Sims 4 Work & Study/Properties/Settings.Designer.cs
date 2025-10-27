@@ -46,5 +46,17 @@ namespace Sims_4_Work___Study.Properties {
                 this["change_channel_chance"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool minimize_to_tray {
+            get {
+                return ((bool)(this["minimize_to_tray"]));
+            }
+            set {
+                this["minimize_to_tray"] = value;
+            }
+        }
     }
 }

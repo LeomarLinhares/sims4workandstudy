@@ -31,7 +31,7 @@ namespace Sims_4_Work___Study
             // Gera ícones da barra de tarefas
             try 
             {
-                IconGenerator.GenerateIcons.CreateTaskbarIcons();
+                GenerateIcons.CreateTaskbarIcons();
                 LogError("Ícones da barra de tarefas gerados com sucesso");
             }
             catch (Exception ex)

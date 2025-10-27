@@ -233,33 +233,44 @@
                 BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
                 BorderThickness="0,1,0,0"
                 Padding="20,12">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <StackPanel>
+                <!-- Chance de trocar canal -->
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0"
-                          Text="Chance de trocar canal ao mudar de janela:"
-                          FontSize="12"
-                          VerticalAlignment="Center"
-                          Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <TextBox x:Name="txtChangeChannelChance"
-                            Width="45"
-                            Height="26"
-                            VerticalContentAlignment="Center"
-                            HorizontalContentAlignment="Center"
-                            FontSize="13"
-                            TextChanged="TxtChangeChannelChance_TextChanged"/>
-                    <TextBlock Text="%"
-                              FontSize="13"
+                    <TextBlock Grid.Column="0"
+                              Text="Chance de trocar canal ao mudar de janela:"
+                              FontSize="12"
                               VerticalAlignment="Center"
-                              Margin="4,0,0,0"
                               Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
-                </StackPanel>
-            </Grid>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <TextBox x:Name="txtChangeChannelChance"
+                                Width="45"
+                                Height="26"
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Center"
+                                FontSize="13"
+                                TextChanged="TxtChangeChannelChance_TextChanged"/>
+                        <TextBlock Text="%"
+                                  FontSize="13"
+                                  VerticalAlignment="Center"
+                                  Margin="4,0,0,0"
+                                  Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Minimizar para bandeja -->
+                <CheckBox x:Name="chkMinimizeToTray"
+                         Content="Minimizar para a bandeja do sistema"
+                         FontSize="12"
+                         Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
+                         Checked="ChkMinimizeToTray_Changed"
+                         Unchecked="ChkMinimizeToTray_Changed"/>
+            </StackPanel>
         </Border>
     </Grid>
 </Window>
