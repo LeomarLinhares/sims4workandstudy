@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Timers;
 using CSCore;
 using CSCore.Codecs;
-using CSCore.Codecs.FLAC;
 using CSCore.SoundOut;
 using CSCore.Streams;
 using Sims_4_Work___Study;
@@ -14,273 +9,177 @@ using Sims_4_Work___Study.Properties;
 
 public class CSAudioManager
 {
-    private ISoundOut outputDevice;
-    private SimpleMixer mixer;
-    private Random random = new Random();
+    private readonly AudioConfiguration config;
+    private readonly MusicLibraryManager libraryManager;
+    private readonly ChannelFadeService fadeService;
+    private readonly Random random;
 
-    private List<string> allFolders;
-    private List<string> unplayedFolders;
-    private List<string> playedFolders;
-    private string playingFolder;
+    private ISoundOut? outputDevice;
+    private SimpleMixer? mixer;
+    private MusicTrack? currentTrack;
 
-
-    private List<VolumeSource> tracks = new List<VolumeSource>();
-    public event EventHandler PlaybackFinished;
+    public event EventHandler? PlaybackFinished;
     public int chanceTarget = Settings.Default.change_channel_chance;
 
-    private int currentHighlightIndex = -1;
-
-    private const float volumeAlto = 1.0f;
-    private const float volumeMudo = 0.0f;
-
-    private System.Timers.Timer fadeTimer;
-    private const int fadeSteps = 20;
-    private const int fadeIntervalMs = 50;
-    private int currentStep;
-    private VolumeSource fadingOutTrack;
-    private VolumeSource fadingInTrack;
-
-    private List<IWaveSource> readers = new List<IWaveSource>();
-
-    public CSAudioManager()
+    public CSAudioManager() : this(AudioConfiguration.Default)
     {
-        mixer = new SimpleMixer(2, 44100)
+    }
+
+    public CSAudioManager(AudioConfiguration configuration)
+    {
+        config = configuration ?? AudioConfiguration.Default;
+        libraryManager = new MusicLibraryManager();
+        fadeService = new ChannelFadeService(config.FadeSteps, config.FadeIntervalMs);
+        random = new Random();
+
+        InitializeMixer();
+        InitializeOutputDevice();
+    }
+
+    private void InitializeMixer()
+    {
+        mixer = new SimpleMixer(config.AudioChannels, config.SampleRate)
         {
-            FillWithZeros = true,
-            DivideResult = false
+            FillWithZeros = config.MixerFillWithZeros,
+            DivideResult = config.MixerDivideResult
         };
 
         mixer.PlaybackFinished += (s, e) =>
         {
             PlaybackFinished?.Invoke(this, EventArgs.Empty);
         };
+    }
 
+    private void InitializeOutputDevice()
+    {
         outputDevice = new WasapiOut();
+    }
 
+    public void SetBasePath(string basePath)
+    {
+        libraryManager.Initialize(basePath);
     }
 
     public void LoadRandomMusicFolder()
     {
-        if (unplayedFolders.Count == 0)
+        string folderPath = libraryManager.GetNextRandomMusic();
+        LoadMusicFromFolder(folderPath);
+    }
+
+    private void LoadMusicFromFolder(string folderPath)
+    {
+        Debug.WriteLine($"Carregando música: {folderPath}");
+
+        currentTrack = new MusicTrack(folderPath);
+
+        string[] audioFiles = libraryManager.GetMusicFiles(
+            folderPath, 
+            config.AudioFileExtension, 
+            config.ChannelsPerTrack);
+
+        foreach (var filePath in audioFiles)
         {
-            ResetUnplayedFolders();
+            AddChannelToCurrentTrack(filePath);
         }
 
-        string selectedFolder = unplayedFolders[0];
-
-        if (playingFolder == null)
+        if (currentTrack.ChannelCount == config.ChannelsPerTrack)
         {
-            playingFolder = selectedFolder;
+            int initialChannel = random.Next(config.ChannelsPerTrack);
+            currentTrack.SetActiveChannel(initialChannel, config.MaxVolume);
         }
+    }
 
-        unplayedFolders.RemoveAt(0);
+    private void AddChannelToCurrentTrack(string filePath)
+    {
+        if (currentTrack == null || mixer == null)
+            return;
 
-        Debug.WriteLine("Carregando pasta: " + selectedFolder);
+        IWaveSource audioSource = CodecFactory.Instance.GetCodec(filePath);
 
-        var flacFiles = Directory.GetFiles(selectedFolder, "*.mp3");
-        if (flacFiles.Length < 8)
+        var sampleSource = audioSource
+            .ToSampleSource()
+            .ToStereo();
+
+        var volumeSource = new VolumeSource(sampleSource)
         {
-            throw new FileNotFoundException($"Pasta {selectedFolder} não tem pelo menos 8 faixas FLAC.");
-        }
+            Volume = config.MinVolume
+        };
 
-        foreach (var filePath in flacFiles.Take(8))
-        {
-            AddTrack(filePath);
-        }
+        var channel = new AudioChannel(filePath, audioSource, volumeSource);
 
-        if (tracks.Count == 8)
-        {
-            currentHighlightIndex = random.Next(8);
-            tracks[currentHighlightIndex].Volume = volumeAlto;
-        }
+        currentTrack.AddChannel(channel);
+        mixer.AddSource(volumeSource);
     }
 
     public void InitializePlayback()
     {
         if (mixer == null)
         {
-            mixer = new SimpleMixer(2, 44100)
-            {
-                FillWithZeros = true,
-                DivideResult = false
-            };
-            mixer.PlaybackFinished += (s, e) =>
-            {
-                PlaybackFinished?.Invoke(this, EventArgs.Empty);
-            };
+            InitializeMixer();
         }
 
         if (outputDevice == null)
-            outputDevice = new WasapiOut();
-
-        outputDevice.Initialize(mixer.ToWaveSource(32));
-        outputDevice.Play();
-    }
-
-    /// <summary>
-    /// Adiciona uma faixa FLAC ao mixer, iniciando com volume mudo (0).
-    /// </summary>
-    private void AddTrack(string filePath)
-    {
-        IWaveSource reader = CodecFactory.Instance.GetCodec(filePath);
-        readers.Add(reader);
-
-        var source = reader
-            .ToSampleSource()
-            .ToStereo();
-
-        var volumeSource = new VolumeSource(source)
         {
-            Volume = volumeMudo
-        };
+            InitializeOutputDevice();
+        }
 
-        tracks.Add(volumeSource);
-        mixer.AddSource(volumeSource);
-    }
-
-    public void CreateMixerIfNeeded()
-    {
-        if (mixer == null)
+        if (outputDevice != null && mixer != null)
         {
-            mixer = new SimpleMixer(2, 44100)
-            {
-                FillWithZeros = true,
-                DivideResult = false
-            };
-            mixer.PlaybackFinished += (s, e) =>
-            {
-                PlaybackFinished?.Invoke(this, EventArgs.Empty);
-            };
+            outputDevice.Initialize(mixer.ToWaveSource(32));
+            outputDevice.Play();
         }
     }
 
     public void StartPlayback()
     {
         if (outputDevice == null)
-            outputDevice = new WasapiOut();
+            InitializeOutputDevice();
 
         if (mixer == null)
-            CreateMixerIfNeeded();
+            InitializeMixer();
 
-        outputDevice.Initialize(mixer.ToWaveSource(32));
-        outputDevice.Play();
-    }
-
-    public void ClearMixer()
-    {
-        if (mixer != null)
+        if (outputDevice != null && mixer != null)
         {
-            mixer.Dispose();
-            mixer = null;
+            outputDevice.Initialize(mixer.ToWaveSource(32));
+            outputDevice.Play();
         }
     }
 
-    public void ClearAll()
-    {
-        if (outputDevice != null)
-        {
-            outputDevice.Stop();
-            outputDevice.Dispose();
-            outputDevice = null;
-        }
-        ClearMixer();
-        tracks.Clear();
-        readers.Clear();
-    }
-
-    public void SetBasePath(string assetsPath)
-    {
-        allFolders = Directory.GetDirectories(assetsPath).ToList();
-        ResetUnplayedFolders();
-    }
-
-    private void ResetUnplayedFolders()
-    {
-        allFolders = new List<string>(allFolders);
-        Shuffle(allFolders);
-        unplayedFolders = new List<string>(allFolders);
-        playedFolders = new List<string>();
-    }
-    private void Shuffle(List<string> list)
-    {
-        for (int i = list.Count - 1; i > 0; i--)
-        {
-            int j = random.Next(i + 1);
-            (list[i], list[j]) = (list[j], list[i]);
-        }
-    }
-
-    /// <summary>
-    /// Quando ocorre mudança de foco na janela, faz o fade entre a faixa atual e outra aleatória.
-    /// </summary>
     public void OnWindowFocusChanged()
     {
         int chanceResult = random.Next(100);
-        if (chanceResult >= chanceTarget) return;
+        if (chanceResult >= chanceTarget) 
+            return;
 
-        if (tracks.Count < 8) return;
+        if (currentTrack == null || currentTrack.ChannelCount < 2)
+            return;
 
-        int newIndex;
-        do
+        if (fadeService.IsFading)
+            return;
+
+        int newChannelIndex = currentTrack.GetRandomChannelIndexExcludingCurrent(random);
+
+        var fadingOutChannel = currentTrack.ActiveChannel;
+        var fadingInChannel = currentTrack.Channels[newChannelIndex];
+
+        if (fadingOutChannel == null || fadingInChannel == null)
+            return;
+
+        fadeService.StartFade(fadingOutChannel, fadingInChannel, config.MaxVolume, config.MaxVolume);
+
+        fadeService.FadeCompleted += (s, e) =>
         {
-            newIndex = random.Next(tracks.Count);
-        } while (newIndex == currentHighlightIndex);
-
-        fadingOutTrack = tracks[currentHighlightIndex];
-        fadingInTrack = tracks[newIndex];
-        currentHighlightIndex = newIndex;
-
-        currentStep = 0;
-        if (fadeTimer == null)
-        {
-            fadeTimer = new System.Timers.Timer(fadeIntervalMs);
-            fadeTimer.Elapsed += FadeTimer_Elapsed;
-        }
-        fadeTimer.Start();
-    }
-
-    private void FadeTimer_Elapsed(object sender, ElapsedEventArgs e)
-    {
-        currentStep++;
-
-        float delta = (volumeAlto - volumeMudo) / fadeSteps;
-
-        if (fadingOutTrack != null)
-        {
-            float newVolume = fadingOutTrack.Volume - delta;
-            fadingOutTrack.Volume = Math.Max(volumeMudo, newVolume);
-        }
-
-        if (fadingInTrack != null)
-        {
-            float newVolume = fadingInTrack.Volume + delta;
-            fadingInTrack.Volume = Math.Min(volumeAlto, newVolume);
-        }
-
-        if (currentStep >= fadeSteps)
-        {
-            fadeTimer.Stop();
-            if (fadingOutTrack != null)
-                fadingOutTrack.Volume = volumeMudo;
-            if (fadingInTrack != null)
-                fadingInTrack.Volume = volumeAlto;
-        }
+            if (currentTrack != null)
+            {
+                currentTrack.SetActiveChannel(newChannelIndex, config.MaxVolume);
+            }
+        };
     }
 
     public void StopAll()
     {
-        if (outputDevice != null)
-        {
-            outputDevice.Stop();
-        }
-    }
-
-    public void SetMainTrackVolume(float volume)
-    {
-        if (currentHighlightIndex >= 0 && currentHighlightIndex < tracks.Count)
-        {
-            tracks[currentHighlightIndex].Volume = volume;
-        }
+        outputDevice?.Stop();
+        fadeService?.StopFade();
     }
 
     public void PausePlayback()
@@ -293,86 +192,106 @@ public class CSAudioManager
         outputDevice?.Play();
     }
 
+    public void SetMainTrackVolume(float volume)
+    {
+        if (currentTrack != null)
+        {
+            currentTrack.SetActiveChannelVolume(volume);
+        }
+    }
+
     public void PreviousSong()
     {
-        if (playedFolders.Count == 0)
+        if (!libraryManager.HasPreviousMusic)
         {
             Debug.WriteLine("Nenhuma música anterior para reproduzir.");
             return;
         }
-        unplayedFolders.Insert(0, playingFolder);
-        playingFolder = playedFolders.Last();
-        playedFolders.RemoveAt(playedFolders.Count - 1);
-        Debug.WriteLine("Reproduzindo pasta anterior: " + playingFolder);
-        ClearMixer();
-        CreateMixerIfNeeded();
-        tracks.Clear();
-        var flacFiles = Directory.GetFiles(playingFolder, "*.mp3");
-        if (flacFiles.Length < 8)
-        {
-            throw new FileNotFoundException($"Pasta {playingFolder} não tem pelo menos 8 faixas FLAC.");
-        }
-        foreach (var filePath in flacFiles.Take(8))
-        {
-            AddTrack(filePath);
-        }
-        if (tracks.Count == 8)
-        {
-            currentHighlightIndex = random.Next(8);
-            tracks[currentHighlightIndex].Volume = volumeAlto;
-            StopAll();
-            InitializePlayback();
-        }
+
+        string previousFolder = libraryManager.GoToPreviousMusic();
+        Debug.WriteLine($"Reproduzindo música anterior: {previousFolder}");
+
+        ReloadMusic(previousFolder);
     }
 
     public void NextSong()
     {
-        if (unplayedFolders.Count == 0)
-        {
-            ResetUnplayedFolders();
-        }
-        playedFolders.Add(playingFolder);
-        string selectedFolder = unplayedFolders[0];
-        unplayedFolders.RemoveAt(0);
-        playingFolder = selectedFolder;
-        Debug.WriteLine("Carregando pasta: " + selectedFolder);
-        ClearMixer();
-        CreateMixerIfNeeded();
-        tracks.Clear();
+        string nextFolder = libraryManager.GoToNextMusic();
+        Debug.WriteLine($"Carregando próxima música: {nextFolder}");
 
-        var flacFiles = Directory.GetFiles(selectedFolder, "*.mp3");
-        if (flacFiles.Length < 8)
+        ReloadMusic(nextFolder);
+    }
+
+    private void ReloadMusic(string folderPath)
+    {
+        StopAll();
+        ClearMixer();
+        
+        if (currentTrack != null)
         {
-            throw new FileNotFoundException($"Pasta {selectedFolder} não tem pelo menos 8 faixas FLAC.");
+            currentTrack.Dispose();
+            currentTrack = null;
         }
-        foreach (var filePath in flacFiles.Take(8))
+
+        CreateMixerIfNeeded();
+        LoadMusicFromFolder(folderPath);
+        InitializePlayback();
+    }
+
+    public void ClearMixer()
+    {
+        if (mixer != null)
         {
-            AddTrack(filePath);
-        }
-        if (tracks.Count == 8)
-        {
-            currentHighlightIndex = random.Next(8);
-            tracks[currentHighlightIndex].Volume = volumeAlto;
-            StopAll();
-            InitializePlayback();
+            mixer.Dispose();
+            mixer = null;
         }
     }
 
-    //-----------------------------------------------------------
-    // Métodos para DEBUG
-    //-----------------------------------------------------------
+    public void CreateMixerIfNeeded()
+    {
+        if (mixer == null)
+        {
+            InitializeMixer();
+        }
+    }
+
+    public void ClearAll()
+    {
+        StopAll();
+
+        if (outputDevice != null)
+        {
+            outputDevice.Dispose();
+            outputDevice = null;
+        }
+
+        ClearMixer();
+
+        if (currentTrack != null)
+        {
+            currentTrack.Dispose();
+            currentTrack = null;
+        }
+
+        fadeService?.Dispose();
+    }
 
     public void SkipToNearEnd(double secondsBeforeEnd = 5.0)
     {
-        foreach (var reader in readers)
+        if (currentTrack == null)
+            return;
+
+        foreach (var channel in currentTrack.Channels)
         {
-            if (reader.CanSeek)
+            if (channel.AudioSource != null && channel.AudioSource.CanSeek)
             {
-                long bytesPerSecond = reader.WaveFormat.BytesPerSecond;
-                long newPos = reader.Length - (long)(secondsBeforeEnd * bytesPerSecond);
+                long bytesPerSecond = channel.AudioSource.WaveFormat.BytesPerSecond;
+                long newPos = channel.AudioSource.Length - (long)(secondsBeforeEnd * bytesPerSecond);
+                
                 if (newPos < 0)
                     newPos = 0;
-                reader.Position = newPos;
+
+                channel.AudioSource.Position = newPos;
             }
         }
     }
