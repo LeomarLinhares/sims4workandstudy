@@ -21,6 +21,12 @@ namespace Sims_4_Work___Study
         private Random random;
 
         /// <summary>
+        /// Evento disparado quando a música atual muda.
+        /// Parâmetros: (oldFolderPath, newFolderPath)
+        /// </summary>
+        public event Action<string?, string>? MusicChanged;
+
+        /// <summary>
         /// Caminho da pasta de música atualmente sendo reproduzida.
         /// </summary>
         public string? CurrentFolderPath => currentFolderPath;
@@ -46,9 +52,10 @@ namespace Sims_4_Work___Study
         public bool HasPreviousMusic => playedFolders != null && playedFolders.Count > 0;
 
         /// <summary>
-        /// Indica se há músicas seguintes disponíveis (sempre true após inicialização).
+        /// Indica se há músicas seguintes disponíveis.
+        /// Como o ciclo é infinito, retorna true se houver ao menos uma pasta carregada.
         /// </summary>
-        public bool HasNextMusic => unplayedFolders != null;
+        public bool HasNextMusic => allFolders != null && allFolders.Count > 0;
 
         public MusicLibraryManager()
         {
@@ -80,13 +87,35 @@ namespace Sims_4_Work___Study
         }
 
         /// <summary>
+        /// Força a reinicialização do ciclo (reembaralha).
+        /// </summary>
+        public void ForceResetCycle()
+        {
+            ResetUnplayedFolders();
+        }
+
+        /// <summary>
         /// Reseta a lista de músicas não reproduzidas, embaralhando todas as músicas.
+        /// Remove a música atual da lista para evitar repetição imediata.
         /// </summary>
         private void ResetUnplayedFolders()
         {
             var shuffledFolders = new List<string>(allFolders);
+
+            // Evita que a música atual seja a primeira escolhida no novo ciclo
+            if (!string.IsNullOrEmpty(currentFolderPath))
+            {
+                shuffledFolders.RemoveAll(p => string.Equals(p, currentFolderPath, StringComparison.OrdinalIgnoreCase));
+            }
+
             Shuffle(shuffledFolders);
-            
+
+            // Se só houver uma pasta no total e foi removida acima, re-adiciona-a (caso limite)
+            if (shuffledFolders.Count == 0 && !string.IsNullOrEmpty(currentFolderPath) && allFolders.Contains(currentFolderPath))
+            {
+                shuffledFolders.Add(currentFolderPath);
+            }
+
             unplayedFolders = shuffledFolders;
             playedFolders.Clear();
         }
@@ -105,26 +134,39 @@ namespace Sims_4_Work___Study
 
         /// <summary>
         /// Seleciona a próxima música aleatória não reproduzida.
-        /// Se todas foram reproduzidas, reseta a lista e começa novamente.
+        /// Se todas foram reproduzidas, reseta a lista e começa novamente (ciclo infinito).
+        /// Dispara o evento MusicChanged(old, new).
         /// </summary>
         /// <returns>Caminho da pasta da música selecionada</returns>
         public string GetNextRandomMusic()
         {
-            if (unplayedFolders.Count == 0)
+            if (unplayedFolders == null || unplayedFolders.Count == 0)
             {
                 ResetUnplayedFolders();
+            }
+
+            // Garantir que unplayedFolders não é nulo após ResetUnplayedFolders
+            if (unplayedFolders == null || unplayedFolders.Count == 0)
+            {
+                throw new InvalidOperationException("Nenhuma música disponível após reinicialização.");
             }
 
             string selectedFolder = unplayedFolders[0];
             unplayedFolders.RemoveAt(0);
 
-            // Adiciona a música atual à lista de reproduzidas antes de mudar
-            if (!string.IsNullOrEmpty(currentFolderPath))
+            // Adiciona a música atual à lista de reproduzidas antes de mudar (evita duplicatas)
+            string? oldFolder = currentFolderPath;
+            if (!string.IsNullOrEmpty(oldFolder))
             {
-                playedFolders.Add(currentFolderPath);
+                if (!playedFolders.Contains(oldFolder))
+                    playedFolders.Add(oldFolder);
             }
 
             currentFolderPath = selectedFolder;
+
+            // Notifica quem assina o evento para que possa preservar volume/fades entre old->current
+            MusicChanged?.Invoke(oldFolder, currentFolderPath);
+
             return selectedFolder;
         }
 
@@ -139,9 +181,10 @@ namespace Sims_4_Work___Study
                 throw new InvalidOperationException("Nenhuma música anterior disponível.");
             }
 
-            // Move a música atual de volta para não reproduzidas
+            // Move a música atual de volta para não reproduzidas (evita duplicatas)
             if (!string.IsNullOrEmpty(currentFolderPath))
             {
+                unplayedFolders.RemoveAll(p => string.Equals(p, currentFolderPath, StringComparison.OrdinalIgnoreCase));
                 unplayedFolders.Insert(0, currentFolderPath);
             }
 
@@ -149,7 +192,11 @@ namespace Sims_4_Work___Study
             string previousFolder = playedFolders[playedFolders.Count - 1];
             playedFolders.RemoveAt(playedFolders.Count - 1);
 
+            string? oldFolder = currentFolderPath;
             currentFolderPath = previousFolder;
+
+            MusicChanged?.Invoke(oldFolder, currentFolderPath);
+
             return previousFolder;
         }
 

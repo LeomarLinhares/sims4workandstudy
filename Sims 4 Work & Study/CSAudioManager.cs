@@ -18,6 +18,9 @@ public class CSAudioManager
     private SimpleMixer? mixer;
     private MusicTrack? currentTrack;
 
+    // Armazena o volume do usuário para preservar entre músicas
+    private float userVolume = 1.0f;
+
     public event EventHandler? PlaybackFinished;
     public int chanceTarget = Settings.Default.change_channel_chance;
 
@@ -32,8 +35,19 @@ public class CSAudioManager
         fadeService = new ChannelFadeService(config.FadeSteps, config.FadeIntervalMs);
         random = new Random();
 
+        // Inscreve no evento de mudança de música para preservar volume
+        libraryManager.MusicChanged += OnMusicChanged;
+
         InitializeMixer();
         InitializeOutputDevice();
+    }
+
+    /// <summary>
+    /// Chamado quando a música muda. Preserva o volume do usuário.
+    /// </summary>
+    private void OnMusicChanged(string? oldFolder, string newFolder)
+    {
+        Debug.WriteLine($"Música mudou de '{oldFolder}' para '{newFolder}'. Preservando volume: {userVolume}");
     }
 
     private void InitializeMixer()
@@ -85,7 +99,7 @@ public class CSAudioManager
         if (currentTrack.ChannelCount == config.ChannelsPerTrack)
         {
             int initialChannel = random.Next(config.ChannelsPerTrack);
-            currentTrack.SetActiveChannel(initialChannel, config.MaxVolume);
+            currentTrack.SetActiveChannel(initialChannel, userVolume);
         }
     }
 
@@ -165,13 +179,13 @@ public class CSAudioManager
         if (fadingOutChannel == null || fadingInChannel == null)
             return;
 
-        fadeService.StartFade(fadingOutChannel, fadingInChannel, config.MaxVolume, config.MaxVolume);
+        fadeService.StartFade(fadingOutChannel, fadingInChannel, userVolume, userVolume);
 
         fadeService.FadeCompleted += (s, e) =>
         {
             if (currentTrack != null)
             {
-                currentTrack.SetActiveChannel(newChannelIndex, config.MaxVolume);
+                currentTrack.SetActiveChannel(newChannelIndex, userVolume);
             }
         };
     }
@@ -194,6 +208,8 @@ public class CSAudioManager
 
     public void SetMainTrackVolume(float volume)
     {
+        userVolume = volume; // Salva o volume do usuário
+        
         if (currentTrack != null)
         {
             currentTrack.SetActiveChannelVolume(volume);
