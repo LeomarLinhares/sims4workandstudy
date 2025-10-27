@@ -73,6 +73,11 @@ public class CSAudioManager
     {
         libraryManager.Initialize(basePath);
     }
+    
+    public string? GetCurrentMusicFolder()
+    {
+        return currentTrack?.FolderPath;
+    }
 
     public void LoadRandomMusicFolder()
     {
@@ -162,6 +167,8 @@ public class CSAudioManager
     public void OnWindowFocusChanged()
     {
         int chanceResult = random.Next(100);
+        // Se o resultado aleatório for MAIOR OU IGUAL ao valor alvo, não troca
+        // Exemplo: chanceTarget=20 significa 20% de chance de trocar (0-19), 80% de não trocar (20-99)
         if (chanceResult >= chanceTarget) 
             return;
 
