@@ -64,6 +64,7 @@ namespace Sims_4_Work___Study
         private ObservableCollection<MusicFolderViewModel> _musicFolders;
         private NotifyIcon? _trayIcon;
         private bool _isUserDraggingPosition = false;
+        private bool _isHandlingPlaybackFinished = false;
         private static string LogFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "error_log.txt");
 
         private static void LogError(string message)
@@ -432,15 +433,38 @@ namespace Sims_4_Work___Study
 
         private void OnPlaybackFinished(object? sender, EventArgs e)
         {
-            Dispatcher.Invoke(() =>
+            if (_isHandlingPlaybackFinished)
             {
-                _audioManager.ClearAll();
-                _audioManager.CreateMixerIfNeeded();
-                _audioManager.LoadRandomMusicFolder();
-                _audioManager.InitializePlayback();
+                return;
+            }
 
-                UpdateMusicInfo();
-            });
+            _isHandlingPlaybackFinished = true;
+
+            Dispatcher.InvokeAsync(() =>
+            {
+                try
+                {
+                    if (_audioManager == null)
+                    {
+                        return;
+                    }
+
+                    _audioManager.ClearAll();
+                    _audioManager.CreateMixerIfNeeded();
+                    _audioManager.LoadRandomMusicFolder();
+                    _audioManager.InitializePlayback();
+
+                    UpdateMusicInfo();
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Erro ao processar término da reprodução: {ex.Message}");
+                }
+                finally
+                {
+                    _isHandlingPlaybackFinished = false;
+                }
+            }, DispatcherPriority.Normal);
         }
 
         private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
