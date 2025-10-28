@@ -63,6 +63,7 @@ namespace Sims_4_Work___Study
         private DispatcherTimer _updateTimer;
         private ObservableCollection<MusicFolderViewModel> _musicFolders;
         private NotifyIcon? _trayIcon;
+        private bool _isUserDraggingPosition = false;
         private static string LogFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "error_log.txt");
 
         private static void LogError(string message)
@@ -255,6 +256,7 @@ namespace Sims_4_Work___Study
         private void UpdateTimer_Tick(object? sender, EventArgs e)
         {
             UpdateMusicInfo();
+            UpdatePositionSlider();
         }
         
         private void LoadTaskbarIcons()
@@ -350,6 +352,76 @@ namespace Sims_4_Work___Study
             catch (Exception ex)
             {
                 LogError($"Erro ao atualizar informações da música: {ex.Message}");
+            }
+        }
+
+        private void UpdatePositionSlider()
+        {
+            if (_audioManager == null || _isUserDraggingPosition) return;
+
+            try
+            {
+                var position = _audioManager.GetCurrentPosition();
+                var length = _audioManager.GetCurrentLength();
+
+                if (length > TimeSpan.Zero)
+                {
+                    positionSlider.Maximum = length.TotalSeconds;
+                    positionSlider.Value = position.TotalSeconds;
+                    
+                    txtProgressTime.Text = $"{FormatTime(position)} / {FormatTime(length)}";
+                }
+                else
+                {
+                    txtProgressTime.Text = "0:00 / 0:00";
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Erro ao atualizar posição: {ex.Message}");
+            }
+        }
+
+        private string FormatTime(TimeSpan time)
+        {
+            if (time.TotalHours >= 1)
+                return time.ToString(@"h\:mm\:ss");
+            else
+                return time.ToString(@"m\:ss");
+        }
+
+        private void PositionSlider_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _isUserDraggingPosition = true;
+        }
+
+        private void PositionSlider_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _isUserDraggingPosition = false;
+            
+            if (_audioManager != null)
+            {
+                try
+                {
+                    TimeSpan newPosition = TimeSpan.FromSeconds(positionSlider.Value);
+                    _audioManager.SetPosition(newPosition);
+                    LogError($"Posição alterada para: {FormatTime(newPosition)}");
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Erro ao definir posição: {ex.Message}");
+                    System.Windows.MessageBox.Show($"Erro ao alterar posição: {ex.Message}", "Erro", 
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void PositionSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isUserDraggingPosition)
+            {
+                // Atualiza o texto enquanto arrasta, mas não muda a posição ainda
+                txtProgressTime.Text = $"{FormatTime(TimeSpan.FromSeconds(positionSlider.Value))} / {FormatTime(TimeSpan.FromSeconds(positionSlider.Maximum))}";
             }
         }
 

@@ -79,6 +79,59 @@ public class CSAudioManager
         return currentTrack?.FolderPath;
     }
 
+    public TimeSpan GetCurrentPosition()
+    {
+        if (currentTrack != null && currentTrack.Channels.Count > 0)
+        {
+            var channel = currentTrack.Channels[0];
+            if (channel.AudioSource != null && channel.AudioSource.CanSeek)
+            {
+                long position = channel.AudioSource.Position;
+                long bytesPerSecond = channel.AudioSource.WaveFormat.BytesPerSecond;
+                return TimeSpan.FromSeconds((double)position / bytesPerSecond);
+            }
+        }
+        return TimeSpan.Zero;
+    }
+
+    public TimeSpan GetCurrentLength()
+    {
+        if (currentTrack != null && currentTrack.Channels.Count > 0)
+        {
+            var channel = currentTrack.Channels[0];
+            if (channel.AudioSource != null)
+            {
+                long length = channel.AudioSource.Length;
+                long bytesPerSecond = channel.AudioSource.WaveFormat.BytesPerSecond;
+                return TimeSpan.FromSeconds((double)length / bytesPerSecond);
+            }
+        }
+        return TimeSpan.Zero;
+    }
+
+    public void SetPosition(TimeSpan position)
+    {
+        if (currentTrack == null || currentTrack.Channels.Count == 0)
+        {
+            throw new InvalidOperationException("Nenhuma música carregada.");
+        }
+
+        foreach (var channel in currentTrack.Channels)
+        {
+            if (channel.AudioSource != null && channel.AudioSource.CanSeek)
+            {
+                long bytesPerSecond = channel.AudioSource.WaveFormat.BytesPerSecond;
+                long newPosition = (long)(position.TotalSeconds * bytesPerSecond);
+                
+                // Garante que a posição está dentro dos limites
+                newPosition = Math.Max(0, Math.Min(newPosition, channel.AudioSource.Length));
+                
+                channel.AudioSource.Position = newPosition;
+                Debug.WriteLine($"Posição do canal alterada para: {position}");
+            }
+        }
+    }
+
     public void LoadRandomMusicFolder()
     {
         string folderPath = libraryManager.GetNextRandomMusic();
@@ -199,8 +252,35 @@ public class CSAudioManager
 
     public void StopAll()
     {
-        outputDevice?.Stop();
         fadeService?.StopFade();
+        
+        if (outputDevice != null)
+        {
+            try
+            {
+                // Para o mixer primeiro para evitar tentativas de leitura
+                if (mixer != null)
+                {
+                    mixer.FillWithZeros = true;
+                }
+
+                // Se estiver rodando, pause primeiro (mais rápido que Stop)
+                if (outputDevice.PlaybackState == PlaybackState.Playing)
+                {
+                    outputDevice.Pause();
+                }
+
+                // Pequeno delay para garantir que o pause foi processado
+                System.Threading.Thread.Sleep(50);
+
+                // Agora pare de forma segura
+                outputDevice.Stop();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Erro ao parar reprodução: {ex.Message}");
+            }
+        }
     }
 
     public void PausePlayback()
@@ -247,7 +327,27 @@ public class CSAudioManager
 
     private void ReloadMusic(string folderPath)
     {
-        StopAll();
+        fadeService?.StopFade();
+        
+        // Descarta o dispositivo antigo completamente
+        if (outputDevice != null)
+        {
+            try
+            {
+                if (outputDevice.PlaybackState != PlaybackState.Stopped)
+                {
+                    outputDevice.Pause();
+                    System.Threading.Thread.Sleep(50);
+                }
+                outputDevice.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Erro ao descartar dispositivo de áudio: {ex.Message}");
+            }
+            outputDevice = null;
+        }
+        
         ClearMixer();
         
         if (currentTrack != null)
@@ -256,6 +356,8 @@ public class CSAudioManager
             currentTrack = null;
         }
 
+        // Cria novo dispositivo
+        InitializeOutputDevice();
         CreateMixerIfNeeded();
         LoadMusicFromFolder(folderPath);
         InitializePlayback();

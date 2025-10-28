@@ -190,7 +190,7 @@
                 </UniformGrid>
 
                 <!-- Volume -->
-                <Grid>
+                <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -224,6 +224,27 @@
                               Margin="12,0,0,0"
                               Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
                 </Grid>
+
+                <!-- Posição da música -->
+                <Grid Margin="0,0,0,5">
+                    <TextBlock Text="Posição" FontWeight="SemiBold" HorizontalAlignment="Left"
+                              Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                    <TextBlock x:Name="txtProgressTime" 
+                                Text="0:00 / 0:00" 
+                                HorizontalAlignment="Right" 
+                                FontSize="11"
+                                Foreground="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"
+                                Opacity="0.7"/>
+                </Grid>
+                <Slider 
+                    x:Name="positionSlider" 
+                    Minimum="0" 
+                    Maximum="100" 
+                    Value="0" 
+                    TickFrequency="1"
+                    PreviewMouseDown="PositionSlider_PreviewMouseDown"
+                    PreviewMouseUp="PositionSlider_PreviewMouseUp"
+                    ValueChanged="PositionSlider_ValueChanged"/>
             </StackPanel>
         </Border>
 
