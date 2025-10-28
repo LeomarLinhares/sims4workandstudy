@@ -4,7 +4,7 @@ Este é um aplicativo Windows minimalista que roda em segundo plano (na bandeja 
 
 O diferencial está na dinâmica sonora: todas as faixas de uma música tocam simultaneamente, mas apenas uma é destacada com volume mais alto. A cada troca de janela no sistema, o aplicativo realiza uma transição suave (fade) entre as faixas, mudando aleatoriamente qual está em destaque.
 
-[Baixar Instalador - Win x86](https://leomarlinhares.github.io/sims4workandstudy/)
+[Baixar Instalador - Win x64](https://leomarlinhares.github.io/sims4workandstudy/)
 
 ## 🎵 Créditos e Direitos Autorais
 
